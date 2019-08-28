@@ -1,5 +1,6 @@
 ﻿using Microsoft.Azure.WebJobs;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Net.Http;
@@ -39,11 +40,21 @@ namespace QuotesApp
         }
 
         [FunctionName(Constants.FormatQuoteActivity)]
-        public static async Task<string> FormatQuote(
-            [ActivityTrigger] string quote, 
+        public static string FormatQuote(
+            [ActivityTrigger] string quote,
             ILogger log)
         {
-            return $"This quote is now so pretty: {quote}";
+            var q = JsonConvert.DeserializeAnonymousType(quote, new { quotes = new[] { new Quote() } });
+
+            if (q.quotes.Length == 0)
+            {
+               return "Quote could not be formatted.";
+            }
+
+            var response = $"{q.quotes[0].quote} - {q.quotes[0].author}";
+            log.LogInformation($"[FINAL QUOTE] {response}");
+            
+            return response;
         }
     }
 }
