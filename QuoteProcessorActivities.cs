@@ -30,6 +30,10 @@ namespace QuotesApp
                     log.LogInformation($"Got response from {requestUri}. Status code {response.StatusCode}");
 
                     quote = response == null ? "No quote for this query" : await response.Content.ReadAsStringAsync();
+                    TelemetryUtil.TelemetryClient.TrackEvent($"{Constants.GetQuoteActivityName}", new Dictionary<string, string> { { "Quote", quote } });
+                
+                    // Exception
+
                 }
                 catch (Exception e)
                 {
@@ -53,6 +57,7 @@ namespace QuotesApp
 
             var response = $"{q.quotes[0].quote} - {q.quotes[0].author}";
             log.LogInformation($"[FINAL QUOTE] {response}");
+            TelemetryUtil.TelemetryClient.TrackEvent($"{Constants.FormatQuoteActivity}", new Dictionary<string, string> { { "FormattedQuote", response } });
             
             return response;
         }
