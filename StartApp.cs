@@ -17,7 +17,7 @@ namespace QuotesApp
     {
         [FunctionName("StartApp")]
         public static async Task<HttpResponseMessage> Run(
-            [HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = null)] HttpRequest req,
+            [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = null)] HttpRequest req,
             [OrchestrationClient] DurableOrchestrationClient starter,
             ILogger log)
         {
@@ -32,13 +32,24 @@ namespace QuotesApp
 
             if (!tags.Any())
             {
-                log.LogInformation("No tags specified. Returning a random quote");
+                log.LogInformation($"No tags specified. Returning a random quote. App Insights key set {TelemetryUtil.InstrumentationKeySet}");
+                TelemetryUtil.TelemetryClient.TrackEvent("GettingQuoteWithoutTags", new Dictionary<string, string> { { "tags", tagString }, { "anotherCustomMetric", "no tags"} }, new Dictionary<string, double> { { "totalTags", tags.Count() } });
             }
             else
             {
-                log.LogInformation($"Starting to process with tags {string.Join(",", tags)}");
+                log.LogInformation($"Starting to process with tags {string.Join(",", tags)}. App Insights key set {TelemetryUtil.InstrumentationKeySet}");
+                TelemetryUtil.TelemetryClient.TrackEvent("GettingQuoteWithTags", new Dictionary<string, string> { { "tags", tagString }, { "anotherCustomMetric", "some tags" } }, new Dictionary<string, double> { { "totalTags", tags.Count() } });
             }
 
+            try
+            {
+                throw new Exception("something bad happed");
+            }
+
+            catch(Exception e)
+            {
+                TelemetryUtil.TelemetryClient.TrackException(e, new Dictionary<string, string> { { "SomeExceptionMeasure", "some exception value." } });
+            }
             var orchestrationId = await starter.StartNewAsync(Constants.OrchestratorFunctionName, tags);
 
             var reqMessage = new HttpRequestMessage
